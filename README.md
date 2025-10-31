@@ -49,7 +49,7 @@ cd backend
 # 2️⃣ Crear y activar el entorno virtual
 python -m venv venv
 # En Windows:
-source venv/Scripts/activate
+ venv/Scripts/activate
 # En macOS/Linux:
 source venv/bin/activate
 
