@@ -195,11 +195,8 @@ vite.config.ts.timestamp-*
 # 🧠 PROJECT SPECIFIC (Nutrition AI Agent)
 # =========================================
 # Data files
-data/*.csv
 data/*.xlsx
-*.csv
 *.xlsx
-*.json
 
 # =========================================
 # ⚙️ OS / SYSTEM
