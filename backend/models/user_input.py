@@ -1,24 +1,34 @@
+
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 class UserInput(BaseModel):
-    nombre: str = Field(..., description="Nombre del usuario")
-    edad: int = Field(..., description="Edad en años")
-    sexo: Literal["masculino", "femenino", "otro"] = Field(..., description="Sexo del usuario")
-    peso: float = Field(..., description="Peso en kilogramos (kg)")
+    name: str
+    age: int = Field(..., ge=10, le=120)
+    sex: Literal["male", "female"]
+    weight: float = Field(..., gt=0)
+    height: float = Field(..., gt=0)
 
-    porcentaje_musculo: Optional[float] = Field(None, description="Porcentaje de masa muscular (opcional)")
-    porcentaje_grasa: Optional[float] = Field(None, description="Porcentaje de grasa corporal (opcional)")
+    fat_percentage: Optional[float] = Field(None, ge=1, le=60)
 
-    alergias: Optional[List[str]] = Field(None, description="Lista de alergias alimenticias (opcional)")
-    condiciones: Optional[List[str]] = Field(None, description="Condiciones médicas relevantes (opcional)")
+    exercise: Literal["0-1", "2-3", "4-5", "6-7", "extreme"] = "0-1"
 
-    ejercicio: Optional[Literal[
-        "menos de 1 vez por semana",
-        "2-3 veces por semana",
-        "5 o más días por semana"
-    ]] = Field(None, description="Frecuencia de ejercicio físico")
-
-    agua_litros: Optional[float] = Field(None, description="Cantidad de agua consumida al día (litros)")
+    condition: Literal["none", "diabetes", "hypertension", "vegan"] = "none"
+    allergies: List[str] = []
 
     
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Ángel",
+                "age": 22,
+                "sex": "male",
+                "weight": 70.0,
+                "height": 175.0,
+                "fat_percentage": 18.0,
+                "exercise": "2-3",
+                "condition": "diabetes",
+                "allergies": ["fresa", "maní"],
+            }
+        }
