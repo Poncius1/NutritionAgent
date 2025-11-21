@@ -8,46 +8,54 @@ from services.diet_calculation import calculate_user_requirements
 from services.data_loader import get_foods
 from algorithms.population import generate_initial_population
 from algorithms.genetic import genetic_algorithm
-# from algorithms.annealing import simulated_annealing  # se activará luego
+from algorithms.annealing import simulated_annealing
+import math
 
 
+# ==========================================================
+# SANITIZADOR JSON – evita NaN / Inf que rompen FastAPI
+# ==========================================================
+def clean_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: clean_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_for_json(v) for v in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+    return obj
+
+
+# ==========================================================
+# AGENTE PRINCIPAL
+# ==========================================================
 def nutrition_agent(user_data: UserInput):
-    """
-    Flujo principal del agente:
-    1. Calcula requerimientos nutricionales del usuario
-    2. Carga los alimentos desde la base limpia
-    3. Genera población inicial
-    4. Ejecuta algoritmo genético
-    5. (Futuro) Ejecuta recocido simulado
-    """
-
     print("🔍 Iniciando agente de búsqueda nutricional...")
 
-    # ----------------------------------------------------
-    # 1. REQUERIMIENTOS NUTRICIONALES
-    # ----------------------------------------------------
+    # --------------------------------------------------------------
+    # 1. REQUERIMIENTOS
+    # --------------------------------------------------------------
     print("📌 Calculando requerimientos del usuario...")
     requirements = calculate_user_requirements(user_data)
 
-    # ----------------------------------------------------
-    # 2. CARGA DE ALIMENTOS
-    # ----------------------------------------------------
-    print("📌 Cargando alimentos desde la base limpia...")
+    # --------------------------------------------------------------
+    # 2. ALIMENTOS
+    # --------------------------------------------------------------
+    print("📌 Cargando alimentos desde dataset limpio...")
     foods = get_foods()
 
     if not foods:
-        return {
+        return clean_for_json({
             "status": "error",
-            "message": "No se pudieron cargar los alimentos desde el CSV.",
-        }
+            "message": "No se pudieron cargar alimentos desde la base."
+        })
 
     foods_dict = {item["id"]: item for item in foods}
-
     print(f"📌 {len(foods)} alimentos cargados correctamente.")
 
-    # ----------------------------------------------------
-    # 3. GENERACIÓN DE POBLACIÓN INICIAL
-    # ----------------------------------------------------
+    # --------------------------------------------------------------
+    # 3. POBLACIÓN INICIAL
+    # --------------------------------------------------------------
     print("🧬 Generando población inicial...")
     population = generate_initial_population(
         foods=foods,
@@ -55,15 +63,13 @@ def nutrition_agent(user_data: UserInput):
         requirements=requirements,
         size=200
     )
+    print(f"🧬 Población inicial generada con {len(population)} individuos.")
 
-    print(f"🧬 Población inicial generada: {len(population)} individuos")
-
-    # ----------------------------------------------------
+    # --------------------------------------------------------------
     # 4. ALGORITMO GENÉTICO
-    # ----------------------------------------------------
+    # --------------------------------------------------------------
     print("🧪 Ejecutando algoritmo genético...")
-
-    best_genetic = genetic_algorithm(
+    top_genetic = genetic_algorithm(
         population=population,
         foods_dict=foods_dict,
         user=user_data,
@@ -73,27 +79,54 @@ def nutrition_agent(user_data: UserInput):
         top_k=5
     )
 
-    print("🧬 Mejores dietas generadas (para recocido):")
-    for i, d in enumerate(best_genetic, 1):
-        print(f"   GA Top {i}: {d}")
+    print("🧬 Dietas seleccionadas para recocido simulado:")
+    for i, ind in enumerate(top_genetic, 1):
+        print(f"   GA Top {i}: {ind}")
 
-    # ----------------------------------------------------
-    # 5. RECOCIDO SIMULADO (cuando lo implementemos)
-    # ----------------------------------------------------
-    # print("🔥 Ejecutando recocido simulado...")
-    # best_final = simulated_annealing(best_genetic, ...)
-    best_final = best_genetic  # temporal
+    # --------------------------------------------------------------
+    # 5. RECOCIDO SIMULADO
+    # --------------------------------------------------------------
+    print("🔥 Ejecutando recocido simulado...")
 
-    # ----------------------------------------------------
-    # 6. RESPUESTA FINAL
-    # ----------------------------------------------------
+    best_score_overall = -1
+    best_diet_overall = None
+
+    for i, diet_ids in enumerate(top_genetic, 1):
+        print(f"Refinando dieta GA Top {i} con SA...")
+
+        optimized_ids, score = simulated_annealing(
+            diet_ids,
+            foods_dict,
+            requirements,
+            user_data
+        )
+
+        if score > best_score_overall:
+            best_score_overall = score
+            best_diet_overall = optimized_ids
+
+    # --------------------------------------------------------------
+    # 6. CONVERTIR IDs A OBJETOS COMPLETOS
+    # --------------------------------------------------------------
+    final_foods = []
+    if best_diet_overall:
+        for fid in best_diet_overall:
+            food = foods_dict.get(fid)
+            if food:
+                final_foods.append(food)
+
+    print(f"🏆 Mejor dieta final con fitness {best_score_overall:.4f}")
     print("📦 Construyendo respuesta final...")
 
-    return {
+    # --------------------------------------------------------------
+    # 7. RESPUESTA FINAL + SANITIZADOR JSON
+    # --------------------------------------------------------------
+    response = {
         "status": "ok",
         "message": "Agente ejecutado correctamente.",
         "requirements": requirements,
-        "foods_count": len(foods),
-        "best_genetic": best_genetic,
-        "best_final": best_final
+        "final_diet": final_foods,
+        "final_fitness": best_score_overall
     }
+
+    return clean_for_json(response)

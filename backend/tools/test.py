@@ -12,19 +12,17 @@ sys.path.append(str(ROOT))
 print(f"[BOOT] Agregando al PYTHONPATH: {ROOT}")
 
 # ============================================================
-#  IMPORTS DEL PROYECTO
+# IMPORTS DEL AGENTE COMPLETO
 # ============================================================
 from models.user_input import UserInput
+from services.agent_manager import nutrition_agent
 from services.data_loader import load_food_dataset
-from services.diet_calculation import calculate_user_requirements
-from algorithms.population import generate_initial_population
-from algorithms.genetic import genetic_algorithm
+
 
 # ============================================================
-#  Ejecutar limpieza si existe
+# Ejecutar limpieza si existe
 # ============================================================
 CLEAN_SCRIPT = Path(__file__).parent / "clean_base.py"
-
 
 def try_run_cleaner():
     if CLEAN_SCRIPT.exists():
@@ -35,7 +33,7 @@ def try_run_cleaner():
 
 
 # ============================================================
-#  TEST COMPLETO DEL AGENTE
+# TEST COMPLETO DEL AGENTE
 # ============================================================
 def run_full_test():
     print("\n==============================")
@@ -60,69 +58,46 @@ def run_full_test():
 
     print(f"👤 Usuario de prueba:\n{user}\n")
 
-    # 3. Requerimientos nutricionales
-    print("📌 Calculando requerimientos...")
-    requirements = calculate_user_requirements(user)
-    print("✔ Requerimientos:", requirements)
-
-    # 4. Cargar dataset limpio
-    print("\n📌 Cargando alimentos limpios...")
+    # 3. Validación rápida del CSV limpio
     foods = load_food_dataset()
-
-    # Normalizar dataset: aceptar list o DataFrame
     if isinstance(foods, pd.DataFrame):
-        if foods.empty:
-            print("❌ ERROR: merged_clean.csv está vacío.")
-            return
         foods = foods.to_dict(orient="records")
 
-    if not isinstance(foods, list) or len(foods) == 0:
-        print("❌ ERROR: No se pudieron cargar alimentos.")
+    if not foods:
+        print("❌ ERROR: merged_clean.csv no contiene datos.")
         return
 
-    print(f"✔ {len(foods)} alimentos cargados correctamente.")
-
-    # ============================================================
-    # VALIDAR QUE EXISTE LA COLUMNA "id"
-    # ============================================================
-    first = foods[0]
-    if "id" not in first:
-        print("\n❌ ERROR: merged_clean.csv no contiene columna 'id'.")
-        print("   Revisa clean_base.py o el CSV original.")
-        print("   Columnas encontradas:", list(first.keys()))
+    if "id" not in foods[0]:
+        print("❌ ERROR: El dataset limpio NO incluye columna 'id'.")
+        print("Columnas encontradas:", list(foods[0].keys()))
         return
 
-    # Diccionario id → alimento
-    foods_dict = {f["id"]: f for f in foods}
+    print(f"✔ Dataset limpio OK ({len(foods)} alimentos)\n")
 
-    # 5. Generar población inicial
-    print("\n🧬 Generando población inicial...")
-    population = generate_initial_population(
-        foods=foods,
-        user=user,
-        requirements=requirements,
-        size=200
-    )
-    print(f"✔ Población inicial generada ({len(population)} individuos).")
+    # ============================================================
+    # 4. Ejecutar el agente completo
+    # ============================================================
+    print("🚀 Ejecutando nutrition_agent...\n")
 
-    # 6. Ejecutar GA
-    print("\n🧪 Ejecutando algoritmo genético...")
-    best = genetic_algorithm(
-        population=population,
-        foods_dict=foods_dict,
-        user=user,
-        requirements=requirements,
-        generations=50,
-        mutation_rate=0.05,
-        top_k=5
-    )
+    result = nutrition_agent(user)
 
     print("\n==============================")
-    print("🏆 MEJORES DIETAS (GA)")
-    print("==============================")
+    print("📦 RESULTADO FINAL DEL AGENTE")
+    print("==============================\n")
 
-    for i, d in enumerate(best, 1):
-        print(f"TOP {i}: {d}")
+    print("Estado:", result.get("status"))
+    print("Mensaje:", result.get("message"))
+
+    print("\n📌 Requerimientos calculados:")
+    print(result.get("requirements", {}))
+
+    print("\n🥗 Dietas propuestas por el GA:")
+    best_genetic = result.get("best_genetic", [])
+    for i, d in enumerate(best_genetic, 1):
+        print(f"GA {i}:", d)
+
+    print("\n🔥 Dieta final (post-recocido simulado):")
+    print(result.get("best_final"))
 
     print("\n==============================")
     print("📦 TEST COMPLETO FINALIZADO")
@@ -130,7 +105,7 @@ def run_full_test():
 
 
 # ============================================================
-#  MAIN
+# MAIN
 # ============================================================
 if __name__ == "__main__":
     run_full_test()

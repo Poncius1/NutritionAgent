@@ -1,13 +1,10 @@
-"""
-    Calcula qué tan buena es una combinación de alimentos.
-    individual: lista de IDs de alimentos
-    foods_dict: diccionario id → alimento
-    requirements: requerimientos (cal, macros, sodio)
-    user: UserInput
-    """
+import math
 
 def diet_fitness(individual, foods_dict, requirements, user):
-   
+    """
+    Calcula el fitness de una dieta (lista de IDs).
+    Devuelve un valor entre 0 y 1, nunca NaN, nunca infinito.
+    """
 
     # ============================================
     # 1. Convertir IDs a alimentos reales
@@ -15,65 +12,79 @@ def diet_fitness(individual, foods_dict, requirements, user):
     items = [foods_dict[food_id] for food_id in individual if food_id in foods_dict]
 
     if len(items) == 0:
-        return 0
+        return 0.0
 
     # ============================================
     # 2. Sumar nutrientes
     # ============================================
     totals = {
-        "calories": sum(x["energy"]  for x in items),
-        "protein":  sum(x["protein"] for x in items),
-        "carbs":    sum(x["carbs"]   for x in items),
-        "fat":      sum(x["fat"]     for x in items),
-        "sodium":   sum(x.get("sodium", 0) for x in items),
+        "calories": sum(float(x["energy"])  for x in items),
+        "protein":  sum(float(x["protein"]) for x in items),
+        "carbs":    sum(float(x["carbs"])   for x in items),
+        "fat":      sum(float(x["fat"])     for x in items),
+        "sodium":   sum(float(x.get("sodium", 0)) for x in items),
     }
 
     # ============================================
-    # 3. Error relativo (entre 0 y 1)
+    # 3. Targets nutricionales
+    # ============================================
+    target_cal = requirements.get("calories") or requirements["tdee"]
+    target_pro = requirements["protein_g"]
+    target_carb = requirements["carbs_g"]
+    target_fat = requirements["fat_g"]
+
+    # ============================================
+    # 4. Error relativo
     # ============================================
     def rel_error(target, actual):
-        if target == 0:
+        if target <= 0:
             return 0
         return abs(actual - target) / target
 
-    target_cal = requirements.get("calories") or requirements["tdee"]
-    e_cal = rel_error(target_cal, totals["calories"])
-    e_pro  = rel_error(requirements["protein_g"], totals["protein"])
-    e_carb = rel_error(requirements["carbs_g"], totals["carbs"])
-    e_fat  = rel_error(requirements["fat_g"], totals["fat"])
+    e_cal  = rel_error(target_cal, totals["calories"])
+    e_pro  = rel_error(target_pro, totals["protein"])
+    e_carb = rel_error(target_carb, totals["carbs"])
+    e_fat  = rel_error(target_fat, totals["fat"])
 
     # ============================================
-    # 4. Penalizaciones médicas
+    # 5. Penalizaciones médicas
     # ============================================
-    penalty = 0
+    penalty = 0.0
 
-    #  Hipertensión  <2000 mg/día 
+    # ---- Hipertensión: exceso de sodio
     if user.condition == "hypertension":
-        if totals["sodium"] > requirements["sodium_mg"]:
-            diff = totals["sodium"] - requirements["sodium_mg"]
-            penalty += diff / 2000  # penalización suave
+        limit = requirements["sodium_mg"]
+        if totals["sodium"] > limit:
+            penalty += (totals["sodium"] - limit) / 2000.0
 
-    # Diabetes  exceso de carbohidratos totales
-    # (NO puedes usar azúcares simples porque tu dataset no los contiene)
+    # ---- Diabetes: exceso de carbohidratos totales
     if user.condition == "diabetes":
-        if totals["carbs"] > requirements["carbs_g"]:
-            diff = totals["carbs"] - requirements["carbs_g"]
-            penalty += diff / 300  # ajustado, más realista
+        if totals["carbs"] > target_carb:
+            penalty += (totals["carbs"] - target_carb) / 300.0
 
-    #  Vegano → si hay un alimento animal  dieta inválida
+    # ---- Vegano: si hay alimentos animales → fitness 0
     if user.condition == "vegan":
         for item in items:
+            # tu base probablemente no tiene "origen", así que esto evita fallos
             if item.get("origen") == "animal":
-                return 0
+                return 0.0
 
     # ============================================
-    # 5. Errores totales + penalización médica
+    # 6. Sumar errores + penalizaciones
     # ============================================
     total_error = e_cal + e_pro + e_carb + e_fat + penalty
 
     # ============================================
-    # 6. Convertir a fitness (0 a 1)
+    # 7. Convertir error a fitness (entre 0 y 1)
     # ============================================
-    fitness = 1 - total_error
+    fitness = 1.0 - total_error
 
-    return max(0, min(1, fitness))
+    # ============================================
+    # 8. Sanitización final
+    # ============================================
+    # Nunca devolver NaN o infinito
+    if math.isnan(fitness) or math.isinf(fitness):
+        return 0.0
+
+    # Limitar el fitness entre 0 y 1
+    return max(0.0, min(1.0, fitness))
