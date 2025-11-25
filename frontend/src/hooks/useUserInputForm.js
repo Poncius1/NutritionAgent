@@ -1,4 +1,6 @@
+// src/hooks/useUserInputForm.js
 import { useState } from "react";
+import { generateDiet } from "../api/diet";
 
 const initialValues = {
   name: "",
@@ -34,7 +36,6 @@ export function useUserInputForm() {
     e.preventDefault();
     setSubmitting(true);
 
-    // Validaciones básicas en front
     const age = Number(values.age);
     const weight = Number(values.weight);
     const height = Number(values.height);
@@ -64,12 +65,12 @@ export function useUserInputForm() {
     const payload = {
       name: values.name,
       age,
-      sex: values.sex, // "male" | "female"
+      sex: values.sex,            // "male" | "female"
       weight,
       height,
       fat_percentage: fat === null ? undefined : fat,
-      exercise: values.exercise, // "0-1" | "2-3" | ...
-      condition: values.condition, // "none" | "diabetes" | ...
+      exercise: values.exercise,  // "0-1" | "2-3" | ...
+      condition: values.condition,
       allergies: values.allergies
         ? values.allergies
             .split(",")
@@ -79,24 +80,13 @@ export function useUserInputForm() {
     };
 
     try {
-      // Cambia la URL por la de tu backend real
-      const res = await fetch("http://localhost:8000/tu-endpoint", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error("Error al enviar datos");
-      }
-
-      const data = await res.json();
-      console.log("Respuesta del backend:", data);
-
+      const result = await generateDiet(payload);
+      console.log("Respuesta /diet/generate:", result);
+      // aquí después podremos usar result para mostrar algo
       return true;
     } catch (err) {
-      console.error(err);
-      alert("Ocurrió un error al enviar el formulario");
+      console.error("Error al generar dieta:", err);
+      alert(err.message || "Ocurrió un error al enviar el formulario.");
       return false;
     } finally {
       setSubmitting(false);
