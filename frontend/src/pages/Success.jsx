@@ -57,7 +57,7 @@ function Success() {
         </h1>
         <p className="text-sm text-gray-500 mb-6">
           Estos son tus requerimientos diarios estimados y una selección de
-          alimentos recomendados basada en tus respuestas.
+          alimentos recomendados basada en tus necesidades.
         </p>
 
         {/* Requerimientos diarios */}
