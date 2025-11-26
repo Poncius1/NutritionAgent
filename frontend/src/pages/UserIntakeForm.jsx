@@ -4,24 +4,24 @@ import TextInput from "../components/TextInput";
 import NumberInput from "../components/NumberInput";
 import RadioGroup from "../components/RadioGroup";
 import { useUserInputForm } from "../hooks/useUserInputForm";
-import Layout from "../components/Layout";
+import LayoutGeneral from "../components/LayoutGeneral";
 import { useNavigate } from "react-router-dom";
 
 function UserIntakeForm() {
   const { values, handleChange, handleSubmit, submitting } =
     useUserInputForm();
-
   const navigate = useNavigate();
 
   const onSubmit = async (e) => {
-    const ok = await handleSubmit(e);
-    if (ok) {
-      navigate("/success");
+    const result = await handleSubmit(e);
+    if (result) {
+      navigate("/success", { state: { dietResult: result } });
     }
   };
 
+
   return (
-    <Layout>
+    <LayoutGeneral>
       <div className="bg-white rounded-card shadow-card p-4 sm:p-6 md:p-8">
         {/* Cerrar sesión */}
         <button
@@ -172,7 +172,7 @@ function UserIntakeForm() {
           </div>
         </form>
       </div>
-    </Layout>
+    </LayoutGeneral>
   );
 }
 

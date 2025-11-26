@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { generateDiet } from "../api/diet";
 
 const initialValues = {
   name: "",
@@ -34,7 +35,6 @@ export function useUserInputForm() {
     e.preventDefault();
     setSubmitting(true);
 
-    // Validaciones básicas en front
     const age = Number(values.age);
     const weight = Number(values.weight);
     const height = Number(values.height);
@@ -43,33 +43,33 @@ export function useUserInputForm() {
     if (isNaN(age) || age < 10 || age > 120) {
       alert("La edad debe estar entre 10 y 120 años.");
       setSubmitting(false);
-      return false;
+      return null;
     }
     if (isNaN(weight) || weight <= 0) {
       alert("El peso debe ser mayor a 0 kg.");
       setSubmitting(false);
-      return false;
+      return null;
     }
     if (isNaN(height) || height <= 0) {
       alert("La estatura debe ser mayor a 0.");
       setSubmitting(false);
-      return false;
+      return null;
     }
     if (fat !== null && (fat < 1 || fat > 60)) {
       alert("El porcentaje de grasa corporal debe estar entre 1 y 60.");
       setSubmitting(false);
-      return false;
+      return null;
     }
 
     const payload = {
       name: values.name,
       age,
-      sex: values.sex, // "male" | "female"
+      sex: values.sex,
       weight,
       height,
       fat_percentage: fat === null ? undefined : fat,
-      exercise: values.exercise, // "0-1" | "2-3" | ...
-      condition: values.condition, // "none" | "diabetes" | ...
+      exercise: values.exercise,
+      condition: values.condition,
       allergies: values.allergies
         ? values.allergies
             .split(",")
@@ -79,25 +79,14 @@ export function useUserInputForm() {
     };
 
     try {
-      // Cambia la URL por la de tu backend real
-      const res = await fetch("http://localhost:8000/tu-endpoint", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error("Error al enviar datos");
-      }
-
-      const data = await res.json();
-      console.log("Respuesta del backend:", data);
-
-      return true;
+      const result = await generateDiet(payload);
+      console.log("Respuesta /diet/diet/generate:", result);
+      // devolvemos el resultado para que lo use la página
+      return result;
     } catch (err) {
-      console.error(err);
-      alert("Ocurrió un error al enviar el formulario");
-      return false;
+      console.error("Error al generar dieta:", err);
+      alert(err.message || "Ocurrió un error al enviar el formulario.");
+      return null;
     } finally {
       setSubmitting(false);
     }
