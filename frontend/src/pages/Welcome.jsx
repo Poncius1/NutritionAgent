@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Layout from "../components/Layout";
+import LayoutCentered from "../components/LayoutCentered";
+
 
 function isValidEmail(email) {
   // validación simple
@@ -25,7 +26,7 @@ function Welcome() {
   };
 
   return (
-    <Layout>
+    <LayoutCentered>
       <div className="bg-white rounded-card shadow-card px-6 py-8 sm:px-10 sm:py-10 relative overflow-hidden">
         {/* "Decoración" tipo cards flotantes */}
         <div className="pointer-events-none absolute -top-6 -left-8 w-28 h-28 rounded-2xl bg-nutrition-yellow/70 blur-md opacity-60" />
@@ -102,7 +103,7 @@ function Welcome() {
           </p>
         </main>
       </div>
-    </Layout>
+    </LayoutCentered>
   );
 }
 

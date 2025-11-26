@@ -1,4 +1,3 @@
-// src/hooks/useUserInputForm.js
 import { useState } from "react";
 import { generateDiet } from "../api/diet";
 
@@ -44,32 +43,32 @@ export function useUserInputForm() {
     if (isNaN(age) || age < 10 || age > 120) {
       alert("La edad debe estar entre 10 y 120 años.");
       setSubmitting(false);
-      return false;
+      return null;
     }
     if (isNaN(weight) || weight <= 0) {
       alert("El peso debe ser mayor a 0 kg.");
       setSubmitting(false);
-      return false;
+      return null;
     }
     if (isNaN(height) || height <= 0) {
       alert("La estatura debe ser mayor a 0.");
       setSubmitting(false);
-      return false;
+      return null;
     }
     if (fat !== null && (fat < 1 || fat > 60)) {
       alert("El porcentaje de grasa corporal debe estar entre 1 y 60.");
       setSubmitting(false);
-      return false;
+      return null;
     }
 
     const payload = {
       name: values.name,
       age,
-      sex: values.sex,            // "male" | "female"
+      sex: values.sex,
       weight,
       height,
       fat_percentage: fat === null ? undefined : fat,
-      exercise: values.exercise,  // "0-1" | "2-3" | ...
+      exercise: values.exercise,
       condition: values.condition,
       allergies: values.allergies
         ? values.allergies
@@ -81,13 +80,13 @@ export function useUserInputForm() {
 
     try {
       const result = await generateDiet(payload);
-      console.log("Respuesta /diet/generate:", result);
-      // aquí después podremos usar result para mostrar algo
-      return true;
+      console.log("Respuesta /diet/diet/generate:", result);
+      // devolvemos el resultado para que lo use la página
+      return result;
     } catch (err) {
       console.error("Error al generar dieta:", err);
       alert(err.message || "Ocurrió un error al enviar el formulario.");
-      return false;
+      return null;
     } finally {
       setSubmitting(false);
     }
