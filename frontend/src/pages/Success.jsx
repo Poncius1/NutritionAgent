@@ -114,7 +114,6 @@ const nextY = notesStart + 12;
     "Energía (kcal)",
     "Grasas (g)",
     "Proteínas (g)",
-    "Sodio (mg)",
   ];
 
   const tableRows = foods.map((food) => [
@@ -123,9 +122,6 @@ const nextY = notesStart + 12;
     formatNumber(food.energy, 1),
     formatNumber(food.fat, 1),
     formatNumber(food.protein, 1),
-    food.sodium === null || food.sodium === undefined
-      ? "—"
-      : formatNumber(food.sodium, 0),
   ]);
 
   autoTable(doc, {
@@ -251,7 +247,6 @@ const nextY = notesStart + 12;
                   <th className="px-4 py-2 font-semibold">Energía (kcal)</th>
                   <th className="px-4 py-2 font-semibold">Grasas (g)</th>
                   <th className="px-4 py-2 font-semibold">Proteínas (g)</th>
-                  <th className="px-4 py-2 font-semibold">Sodio (mg)</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,11 +271,6 @@ const nextY = notesStart + 12;
                     </td>
                     <td className="px-4 py-2 text-gray-700">
                       {formatNumber(food.protein, 1)}
-                    </td>
-                    <td className="px-4 py-2 text-gray-700">
-                      {food.sodium === null || food.sodium === undefined
-                        ? "—"
-                        : formatNumber(food.sodium, 0)}
                     </td>
                   </tr>
                 ))}
